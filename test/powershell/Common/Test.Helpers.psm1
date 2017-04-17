@@ -1,7 +1,7 @@
-function Wait-CompleteExecution
+function Wait-UntilTrue
 {
     [CmdletBinding()]
-    param ( 
+    param (
         [ScriptBlock]$sb,
         [int]$TimeoutInMilliseconds = 10000,
         [int]$IntervalInMilliseconds = 1000
@@ -31,10 +31,10 @@ function Test-IsElevated
         # elevated context
         $identity = [System.Security.Principal.WindowsIdentity]::GetCurrent()
         $windowsPrincipal = new-object 'Security.Principal.WindowsPrincipal' $identity
-        if ($windowsPrincipal.IsInRole("Administrators") -eq 1) 
-        { 
-            $IsElevated = $true 
-        } 
+        if ($windowsPrincipal.IsInRole("Administrators") -eq 1)
+        {
+            $IsElevated = $true
+        }
     }
     else {
         # on Linux, tests run via sudo will generally report "root" for whoami
@@ -44,6 +44,27 @@ function Test-IsElevated
     }
     return $IsElevated
 }
+#This function follows the pester naming convention
+function ShouldBeErrorId
+{
+    param([Parameter(ValueFromPipeline, Mandatory)]
+        [ScriptBlock]
+        $sb,
 
-export-modulemember -function Wait-CompleteExecution,Test-IsElevated
+        [Parameter(Mandatory, Position=0)]
+        [string]
+        $FullyQualifiedErrorId)
+
+        try
+        {
+            & $sb
+            Throw "Exception expected, execution should not have reached here"
+        }
+        catch
+        {
+            $_.FullyQualifiedErrorId | Should Be $FullyQualifiedErrorId
+        }
+}
+
+export-modulemember -function Wait-UntilTrue,Test-IsElevated, ShouldBeErrorId
 

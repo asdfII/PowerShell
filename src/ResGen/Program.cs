@@ -12,7 +12,7 @@ namespace ConsoleApplication
         {
             // we are assuming resgen is run with 'dotnet run'
             // so we can use relative paths
-        	foreach (string folder in Directory.EnumerateDirectories(".."))
+            foreach (string folder in Directory.EnumerateDirectories(".."))
             {
                 string moduleName = Path.GetFileName(folder);
                 string resourcePath = Path.Combine(folder, "resources");
@@ -43,7 +43,7 @@ namespace ConsoleApplication
             // className = Full.Name.Of.The.ClassFoo
             // shortClassName = ClassFoo
             // namespaceName = Full.Name.Of.The
-            
+
             string shortClassName = className;
             string namespaceName = null;
             int lastIndexOfDot = className.LastIndexOf('.');

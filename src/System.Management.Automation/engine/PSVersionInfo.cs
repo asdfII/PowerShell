@@ -21,18 +21,18 @@ namespace System.Management.Automation
         internal const string PSVersionName = "PSVersion";
         internal const string SerializationVersionName = "SerializationVersion";
         internal const string WSManStackVersionName = "WSManStackVersion";
-        private static Hashtable s_psVersionTable = null;
+        private static PSVersionHashTable s_psVersionTable = null;
 
         /// <summary>
         /// A constant to track current PowerShell Version.
         /// </summary>
         /// <remarks>
         /// We can't depend on assembly version for PowerShell version.
-        /// 
-        /// This is why we hard code the PowerShell version here. 
-        /// 
-        /// For each later release of PowerShell, this constant needs to 
-        /// be updated to reflect the right version. 
+        ///
+        /// This is why we hard code the PowerShell version here.
+        ///
+        /// For each later release of PowerShell, this constant needs to
+        /// be updated to reflect the right version.
         /// </remarks>
         private static Version s_psV1Version = new Version(1, 0);
         private static Version s_psV2Version = new Version(2, 0);
@@ -54,7 +54,7 @@ namespace System.Management.Automation
         // Static Constructor.
         static PSVersionInfo()
         {
-            s_psVersionTable = new Hashtable(StringComparer.OrdinalIgnoreCase);
+            s_psVersionTable = new PSVersionHashTable(StringComparer.OrdinalIgnoreCase);
 
             s_psVersionTable[PSVersionInfo.PSVersionName] = s_psV6Version;
             s_psVersionTable["PSEdition"] = PSEditionValue;
@@ -71,7 +71,7 @@ namespace System.Management.Automation
 #endif
         }
 
-        internal static Hashtable GetPSVersionTable()
+        internal static PSVersionHashTable GetPSVersionTable()
         {
             return s_psVersionTable;
         }
@@ -153,6 +153,14 @@ namespace System.Management.Automation
             }
         }
 
+        internal static string GitCommitId
+        {
+            get
+            {
+                return (string)GetPSVersionTable()["GitCommitId"];
+            }
+        }
+
         internal static Version CLRVersion
         {
             get
@@ -194,11 +202,11 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <remarks>
         /// For 2.0 PowerShell, we still use "1" as the registry version key.
-        /// For >=3.0 PowerShell, we still use "1" as the registry version key for 
+        /// For >=3.0 PowerShell, we still use "1" as the registry version key for
         /// Snapin and Custom shell lookup/discovery.
         /// </remarks>
         internal static string RegistryVersion1Key
@@ -210,13 +218,13 @@ namespace System.Management.Automation
         }
 
         /// <summary>
-        /// 
+        ///
         /// </summary>
         /// <remarks>
         /// For 3.0 PowerShell, we use "3" as the registry version key only for Engine
         /// related data like ApplicationBase.
-        /// For 3.0 PowerShell, we still use "1" as the registry version key for 
-        /// Snapin and Custom shell lookup/discovery. 
+        /// For 3.0 PowerShell, we still use "1" as the registry version key for
+        /// Snapin and Custom shell lookup/discovery.
         /// </remarks>
         internal static string RegistryVersionKey
         {
@@ -228,7 +236,7 @@ namespace System.Management.Automation
         }
 
 
-        internal static string GetRegisteryVersionKeyForSnapinDiscovery(string majorVersion)
+        internal static string GetRegistryVersionKeyForSnapinDiscovery(string majorVersion)
         {
             int tempMajorVersion = 0;
             LanguagePrimitives.TryConvertTo<int>(majorVersion, out tempMajorVersion);
@@ -308,9 +316,46 @@ namespace System.Management.Automation
     }
 
     /// <summary>
+    /// Represents an implementation of '$PSVersionTable' variable.
+    /// The implementation contains ordered 'Keys' and 'GetEnumerator' to get user-friendly output.
+    /// </summary>
+    public sealed class PSVersionHashTable : Hashtable, IEnumerable
+    {
+        internal PSVersionHashTable(IEqualityComparer equalityComparer) : base(equalityComparer)
+        {
+        }
+
+        /// <summary>
+        /// Returns ordered collection with Keys of 'PSVersionHashTable'
+        /// </summary>
+        public override ICollection Keys
+        {
+            get
+            {
+                Array arr = new string[base.Keys.Count];
+                base.Keys.CopyTo(arr, 0);
+                Array.Sort(arr, StringComparer.OrdinalIgnoreCase);
+                return arr;
+            }
+        }
+
+        /// <summary>
+        /// Returns an enumerator for 'PSVersionHashTable'.
+        /// The enumeration is ordered (based on ordered version of 'Keys').
+        /// </summary>
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            foreach (string key in Keys)
+            {
+                yield return new System.Collections.DictionaryEntry(key, this[key]);
+            }
+        }
+    }
+
+    /// <summary>
     /// An implementation of semantic versioning (http://semver.org)
     /// that can be converted to/from <see cref="System.Version"/>.
-    /// 
+    ///
     /// When converting to <see cref="Version"/>, a PSNoteProperty is
     /// added to the instance to store the semantic version label so
     /// that it can be recovered when creating a new SemanticVersion.
